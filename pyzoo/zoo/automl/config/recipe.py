@@ -443,7 +443,7 @@ class BayesRecipe(Recipe):
         :param training_iteration: no. of iterations for training (n epochs) in trials
         :param epochs: no. of epochs to train in each iteration
         """
-        super(self.__class__, self).__init__()
+        super(BayesRecipe, self).__init__()
         self.num_samples = num_samples
         self.reward_metric = reward_metric
         self.training_iteration = training_iteration
@@ -516,3 +516,64 @@ class BayesRecipe(Recipe):
 
     def search_algorithm(self):
         return 'BayesOpt'
+
+
+class SigOptRecipe(BayesRecipe):
+    def search_space(self, all_available_features):
+        feature_space = [
+            {
+                'name': 'bayes_feature_{}'.format(feature),
+                'type': 'double',
+                'bounds': {'min': 0.3, 'max': 1},
+            }
+            for feature
+            in all_available_features
+        ]
+        other_space = [
+            {
+                'name': 'lstm_1_units_float',
+                'type': 'int',
+                'bounds': {'min': 8, 'max': 128},
+            },
+            {
+                'name': 'lstm_2_units_float',
+                'type': 'int',
+                'bounds': {'min': 8, 'max': 128},
+            },
+            {
+                'name': 'dropout_1',
+                'type': 'double',
+                'bounds': {'min': 0.2, 'max': 0.5},
+            },
+            {
+                'name': 'dropout_2',
+                'type': 'double',
+                'bounds': {'min': 0.2, 'max': 0.5},
+            },
+            {
+                'name': 'lr',
+                'type': 'double',
+                'bounds': {'min': 0.001, 'max': 0.01},
+            },
+            {
+                'name': 'batch_size_log',
+                'type': 'int',
+                'bounds': {'min': 5, 'max': 10},
+            },
+        ]
+
+        if self.bayes_past_seq_config:
+            for k, v in self.bayes_past_seq_config.items():
+                other_space.append({
+                    'name': k,
+                    'type': 'int',
+                    'bounds': {'min': v[0], 'max': v[1]},
+                })
+
+        return feature_space + other_space
+
+    def search_algorithm_params(self):
+        return None
+
+    def search_algorithm(self):
+        return 'SigOpt'

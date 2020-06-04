@@ -23,6 +23,7 @@ from zoo.automl.search.abstract import *
 from zoo.automl.common.util import *
 from ray.tune import Trainable
 from ray.tune.suggest.bayesopt import BayesOptSearch
+from ray.tune.suggest.sigopt import SigOptSearch
 
 
 class RayTuneSearchEngine(SearchEngine):
@@ -77,7 +78,7 @@ class RayTuneSearchEngine(SearchEngine):
         :param metric:
         :return:
         """
-        self.search_space = self._prepare_tune_config(search_space)
+        self.search_space = self._prepare_tune_config(search_space, search_algorithm)
         self.stop_criteria = stop
         self.num_samples = num_samples
         if metric == "mse":
@@ -96,13 +97,13 @@ class RayTuneSearchEngine(SearchEngine):
                 reward_attr="reward_metric",
                 utility_kwargs=search_algorithm_params["utility_kwargs"]
             )
-            # ray version 0.7.3
-            # self.search_algorithm = BayesOptSearch(
-            #     self.search_space,
-            #     metric="reward_metric",
-            #     mode=mode,
-            #     utility_kwargs=search_algorithm_params["utility_kwargs"]
-            # )
+        elif search_algorithm == 'SigOpt':
+            self.search_algorithm = SigOptSearch(
+                self.search_space,
+                name='analytics-zoo Experiment',
+                metric="reward_metric",
+            )
+            experiment = self.search_algorithm.experiment
         else:
             self.search_algorithm = None
         self.fixed_params = fixed_params
@@ -446,7 +447,9 @@ class RayTuneSearchEngine(SearchEngine):
 
         return TrainableClass
 
-    def _prepare_tune_config(self, space):
+    def _prepare_tune_config(self, space, search_algorithm):
+        if search_algorithm == 'SigOpt':
+            return space
         tune_config = {}
         for k, v in space.items():
             if isinstance(v, RandomSample):
