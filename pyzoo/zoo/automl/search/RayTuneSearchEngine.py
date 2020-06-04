@@ -23,7 +23,7 @@ from zoo.automl.search.abstract import *
 from zoo.automl.common.util import *
 from ray.tune import Trainable
 from ray.tune.suggest.bayesopt import BayesOptSearch
-from ray.tune.suggest.sigopt import SigOptSearch
+from zoo.automl.search.sigopt import SigOptSearch
 
 
 class RayTuneSearchEngine(SearchEngine):
@@ -62,7 +62,9 @@ class RayTuneSearchEngine(SearchEngine):
                 future_seq_len=1,
                 validation_df=None,
                 mc=False,
-                metric="mean_squared_error"):
+                metric="mean_squared_error",
+                max_concurrent=None,
+                optimized_metrics=None):
         """
         Do necessary preparations for the engine
         :param input_df:
@@ -88,20 +90,26 @@ class RayTuneSearchEngine(SearchEngine):
             # mode = "max"
             metric_op = 1
         else:
-            raise ValueError("metric can only be \"mse\" or \"r2\"")
+            metric_op = 1
 
+        kwargs = {}
+        if max_concurrent is not None:
+            kwargs['max_concurrent'] = max_concurrent
         if search_algorithm == 'BayesOpt':
             # ray version 0.7.2
             self.search_algorithm = BayesOptSearch(
                 self.search_space,
                 reward_attr="reward_metric",
-                utility_kwargs=search_algorithm_params["utility_kwargs"]
+                utility_kwargs=search_algorithm_params["utility_kwargs"],
+                **kwargs
             )
         elif search_algorithm == 'SigOpt':
             self.search_algorithm = SigOptSearch(
                 self.search_space,
                 name='analytics-zoo Experiment',
-                metric="reward_metric",
+                metric=optimized_metrics or "reward_metric",
+                observation_budget=self.num_samples,
+                **kwargs
             )
             experiment = self.search_algorithm.experiment
         else:

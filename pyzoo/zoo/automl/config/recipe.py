@@ -29,6 +29,7 @@ class Recipe(metaclass=ABCMeta):
         self.training_iteration = 1
         self.num_samples = 1
         self.reward_metric = None
+        self.max_concurrent = None
 
     @abstractmethod
     def search_space(self, all_available_features):
@@ -432,7 +433,8 @@ class BayesRecipe(Recipe):
             look_back=2,
             epochs=5,
             reward_metric=-0.05,
-            training_iteration=5):
+            training_iteration=5,
+            max_concurrent=None):
         """
         Constructor
         :param num_samples: number of hyper-param configurations sampled
@@ -448,6 +450,7 @@ class BayesRecipe(Recipe):
         self.reward_metric = reward_metric
         self.training_iteration = training_iteration
         self.epochs = epochs
+        self.max_concurrent = max_concurrent
         if isinstance(
             look_back,
             tuple) and len(look_back) == 2 and isinstance(
@@ -519,6 +522,10 @@ class BayesRecipe(Recipe):
 
 
 class SigOptRecipe(BayesRecipe):
+    def __init__(self, *args, optimized_metrics=None, **kwargs):
+        super(SigOptRecipe, self).__init__(*args, **kwargs)
+        self._optimized_metrics = optimized_metrics
+
     def search_space(self, all_available_features):
         feature_space = [
             {
@@ -577,3 +584,6 @@ class SigOptRecipe(BayesRecipe):
 
     def search_algorithm(self):
         return 'SigOpt'
+
+    def optimized_metrics(self):
+        return self._optimized_metrics

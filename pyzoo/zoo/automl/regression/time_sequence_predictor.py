@@ -236,6 +236,8 @@ class TimeSequencePredictor(object):
         search_algorithm_params = recipe.search_algorithm_params()
         search_algorithm = recipe.search_algorithm()
         fixed_params = recipe.fixed_params()
+        max_concurrent = recipe.max_concurrent
+        optimized_metrics = recipe.optimized_metrics()
         del stop['num_samples']
 
         searcher = RayTuneSearchEngine(logs_dir=self.logs_dir,
@@ -256,7 +258,9 @@ class TimeSequencePredictor(object):
                          validation_df=validation_df,
                          metric=metric,
                          mc=mc,
-                         num_samples=num_samples)
+                         num_samples=num_samples,
+                         max_concurrent=max_concurrent,
+                         optimized_metrics=optimized_metrics)
         # searcher.test_run()
         searcher.run()
 
